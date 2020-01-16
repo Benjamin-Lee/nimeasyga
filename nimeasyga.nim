@@ -22,7 +22,7 @@ proc mutate*(individual: seq[bool]): seq[bool] =
 
 proc randomSelection*[T](population: seq[T]): T = population[0] # TODO: placeholder
 proc tournamentSelection*[T](population: seq[T],
-        tournamentSize: Positive) = population[0] # TODO: placeholder
+        tournamentSize: Positive = 2) = population[0] # TODO: placeholder
 
 proc geneticAlgorithm*[T](data: seq[T], fitness: proc(individual: seq[bool], data: seq[T]): float,
                           generations: Positive = 2,
@@ -40,10 +40,10 @@ proc geneticAlgorithm*[T](data: seq[T], fitness: proc(individual: seq[bool], dat
   ## - `seed`: When set to 0, the default, no fixed seed is used and the program is nondeterministic. Set to a nonzero value for a fixed seed.
 
   # either use the provided seed or randomize
-  if seed != 0:
-    randomize(seed)
-  else:
+  if seed == 0:
     randomize()
+  else:
+    randomize(seed)
 
   # create the intial population
   var population = newSeq[seq[bool]](populationSize)
