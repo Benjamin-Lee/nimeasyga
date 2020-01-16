@@ -24,7 +24,7 @@ proc randomSelection*[T](population: seq[T]): T = population[0] # TODO: placehol
 proc tournamentSelection*[T](population: seq[T],
         tournamentSize: Positive) = population[0] # TODO: placeholder
 
-proc GeneticAlgorithm*[T](data: seq[T], fitness: proc(individual: seq[bool], data: seq[T]): float,
+proc geneticAlgorithm*[T](data: seq[T], fitness: proc(individual: seq[bool], data: seq[T]): float,
                           generations: Positive = 2,
                           populationSize: Positive = 3,
                           crossoverRate: range[0.0..1.0] = 0.5,
