@@ -94,10 +94,28 @@ proc geneticAlgorithm*[D, G](data: D,
   for generation in 0..<generations:
     dbg "\n############\nGeneration ", generation, "\n############"
 
+    # evaluate the fitness of the population
     for individual in population.mitems:
       individual.fitness = fitness(individual.genome, data)
-
     dbg "\nPopulation: ", population
+
+    # create the next generation
+    for i in countup(0, populationSize - 1, 2):
+      var parent_1 = selection(population)
+      var parent_2 = selection(population)
+
+      if rand(0.0..1.0) < crossoverRate:
+        let newGenes = crossover(parent_1.genome, parent_2.genome)
+        parent_1.genome = newGenes[0]
+        parent_2.genome = newGenes[1]
+
+      if rand(0.0..1.0) < mutationRate:
+        parent_1.genome = mutate(parent_1.genome)
+        parent_2.genome = mutate(parent_2.genome)
+
+      nextPopulation[i] = parent_1
+      if i+1 < populationSize:
+        nextPopulation[i+1] = parent_2
 
     # preserve the fittest individual, if requested
     if elitism:
