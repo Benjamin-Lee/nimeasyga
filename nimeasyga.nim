@@ -2,45 +2,61 @@ import random
 
 ## A simple, easy to use package for genetic algorithms in Nim.
 
-proc createIndividual*[T](data: T): seq[bool] =
-  ## The default individual creation method.
+template dbg(args: varargs[untyped]) =
+  ## Modified from https://github.com/enthus1ast/nimDbg
+  ## Like `debugEcho` but removed when not compiled with -d:debug
+  when defined debug: debugEcho args
+
+type Individual*[G] = object
+  ## A type to hold a genome and its calculated fitness.
+  genome: G
+  fitness: float
+
+proc `<`*(x, y: Individual): bool =
+  ## The comparison operator for individuals.
+  ## Works by compares fitnesses.
+  x.fitness < y.fitness
+
+proc createGenome*[T](data: T): seq[bool] =
+  ## The default genome creation method.
   ## Creates a seq of randomly chosen bools of the same length of data.
   result = newSeq[bool](data.len)
   for index in 0..<data.len:
     result[index] = random.sample([true, false])
 
-proc crossover*[T](parent_1: seq[T], parent_2: seq[T]): (seq[T], seq[T]) =
+proc crossover*[G](genome_1: seq[G], genome_2: seq[G]): (seq[G], seq[G]) =
   ## The default crossover function.
-  ## Takes two parents and chooses a random index at which to recombine them.
-  let idx = rand(0..<parent_1.high)
-  return (parent_1[0..idx] & parent_2[idx+1..parent_2.high], parent_2[0..idx] &
-      parent_1[idx+1..parent_1.high])
+  ## Takes two parent genomes and chooses a random index at which to recombine them.
+  let idx = rand(0..<genome_1.high)
+  return (genome_1[0..idx] & genome_2[idx+1..genome_2.high], genome_2[0..idx] &
+      genome_1[idx+1..genome_1.high])
 
-proc mutate*(individual: seq[bool]): seq[bool] =
-  ## The default mutation function when individuals are represented as `seq[bool]`.
-  ## Randomly flips a bit in the individual's genome.
-  result = deepCopy(individual)
+proc mutate*(genome: seq[bool]): seq[bool] =
+  ## The default mutation function when genomes are represented as `seq[bool]`.
+  ## Randomly flips a bit in the genome.
+  result = deepCopy(genome)
   let idx = rand(0..result.high)
   result[idx] = not result[idx]
 
-proc randomSelection*[T](population: seq[T]): T =
+proc randomSelection*(population: seq[Individual]): Individual =
   return random.sample(population)
 
-proc tournamentSelection*[T](population: seq[T]): T =
+proc tournamentSelection*(population: seq[Individual]): Individual =
   return population[0] # TODO: placeholder
 
-proc geneticAlgorithm*[T, I](data: T, fitness: proc(individual: I, data: T): float,
+
+proc geneticAlgorithm*[T, G](data: T, fitness: proc(genome: G, data: T): float,
                           generations: Positive = 2,
                           populationSize: Positive = 3,
                           crossoverRate: range[0.0..1.0] = 0.5,
                           mutationRate: range[0.0..1.0] = 0.5,
                           elitism = true,
-                          createIndividual: proc(data: T): I = createIndividual,
-                          mutate: proc(individual: I): I = mutate,
-                          crossover: proc(parent_1: I, parent_2: I): (I,
-                              I) = crossover,
-                          selection: proc(population: seq[
-                              I]): I = tournamentSelection,
+                          createGenome: proc(data: T): G = createGenome,
+                          mutate: proc(genome: G): G = mutate,
+                          crossover: proc(genome_1: G, genome_2: G): (G,
+                              G) = crossover,
+                          selection: proc(population: seq[Individual[
+                              G]]): Individual[G] = tournamentSelection,
                           seed: int64 = 0): float =
   ## The main algorithm to run the genetic algorithm.
   ##
@@ -55,38 +71,29 @@ proc geneticAlgorithm*[T, I](data: T, fitness: proc(individual: I, data: T): flo
   else:
     randomize(seed)
 
-  # create the intial population
-  var population = newSeq[I](populationSize)
-  for i in 0..<populationSize:
-    population[i] = createIndividual(data)
-  var nextPopulation = newSeq[I](populationSize) # to hold the next generation
-  echo population
+  # create the initial population and the next population's variables
+  var population, nextPopulation = newSeq[Individual[G]](populationSize)
 
-  var fitnesses = newSeq[float](populationSize)
+  # instantiate the first generation
+  for i in 0..<populationSize:
+    population[i] = Individual[G](genome: createGenome(data))
 
   for generation in 0..<generations:
+    dbg "\n############\nGeneration ", generation, "\n############"
 
-    for idx, individual in population:
-      fitnesses[idx] = fitness(individual, data)
+    for individual in population.mitems:
+      individual.fitness = fitness(individual.genome, data)
+
+    dbg "\nPopulation: ", population
 
     # preserve the fittest individual, if requested
     if elitism:
-      # placeholder variables
-      var fittestIndividualIdx = 0
-      var fittestSoFar = fitnesses[0]
-
-      # find the fittest individual's index
-      for i in 0..<fitnesses.len:
-        if fitnesses[i] > fittestSoFar:
-          fittestSoFar = fitnesses[i]
-          fittestIndividualIdx = i
-
       # add it to the new population
-      nextPopulation[0] = population[fittestIndividualIdx]
+      nextPopulation[0] = max(population)
+      dbg "Fittest: ", max(population)
 
     population = nextPopulation
 
-    echo fitnesses
   return -1000.0 # TODO: placeholder
 
 # echo createIndividual[int](@[1, 2, 3])
