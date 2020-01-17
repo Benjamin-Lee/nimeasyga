@@ -1,4 +1,5 @@
 import random
+import sugar
 
 ## A simple, easy to use package for genetic algorithms in Nim.
 
@@ -42,27 +43,39 @@ proc randomSelection*(population: seq[Individual]): Individual =
   return random.sample(population)
 
 proc tournamentSelection*(population: seq[Individual]): Individual =
-  return population[0] # TODO: placeholder
+  ## Tournament selection algorithm.
+  ## Chooses two members of the population and returns the fitter of the two.
+  var x = sample(population)
+  var y = sample(population)
+  if x.fitness > y.fitness:
+    return x
+  return y
 
-
-proc geneticAlgorithm*[T, G](data: T, fitness: proc(genome: G, data: T): float,
-                          generations: Positive = 2,
-                          populationSize: Positive = 3,
-                          crossoverRate: range[0.0..1.0] = 0.5,
-                          mutationRate: range[0.0..1.0] = 0.5,
-                          elitism = true,
-                          createGenome: proc(data: T): G = createGenome,
-                          mutate: proc(genome: G): G = mutate,
-                          crossover: proc(genome_1: G, genome_2: G): (G,
-                              G) = crossover,
-                          selection: proc(population: seq[Individual[
-                              G]]): Individual[G] = tournamentSelection,
-                          seed: int64 = 0): float =
+proc geneticAlgorithm*[D, G](data: D,
+                             fitness: (G, D) -> float,
+                             generations: Positive = 2,
+                             populationSize: Positive = 3,
+                             crossoverRate: range[0.0..1.0] = 0.5,
+                             mutationRate: range[0.0..1.0] = 0.5,
+                             elitism = true,
+                             createGenome: (D) -> G = createGenome,
+                             mutate: (G) -> G = mutate,
+                             crossover: (G, G) -> (G, G) = crossover,
+                             selection: (seq[Individual[G]]) -> Individual[
+                                 G] = tournamentSelection,
+                             seed: int64 = 0): float =
   ## The main algorithm to run the genetic algorithm.
   ##
+  ## By default, the type of `G` is assumed to be `seq[bool]`.
+  ## However, while theoretically doable, not every candidate solution is amenable to being represented as a bitstring.
+  ## In these cases, you will need to define your own mutation and crossover function.
+  ##
   ## ## Arguments
-  ## - `fitness`
+  ## - `data`: The input data use to evaluate the fitness of the indviduals in the population
+  ## - `fitness`: The function the calculuates the fitness of a genome
   ## - `generations`: The number of generations to run the
+  ## - `elitism`: Whether to conserve the fittest individual in a generation
+  ## - `createGenome`: A function to generate genomes given data
   ## - `seed`: When set to 0, the default, no fixed seed is used and the program is nondeterministic. Set to a nonzero value for a fixed seed.
 
   # either use the provided seed or randomize
@@ -95,6 +108,3 @@ proc geneticAlgorithm*[T, G](data: T, fitness: proc(genome: G, data: T): float,
     population = nextPopulation
 
   return -1000.0 # TODO: placeholder
-
-# echo createIndividual[int](@[1, 2, 3])
-# echo fitness(@[true, true], @[1, 2])
