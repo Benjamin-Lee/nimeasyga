@@ -23,7 +23,7 @@ proc createGenome*[T](data: T): seq[bool] =
   for index in 0..<data.len:
     result[index] = random.sample([true, false])
 
-proc crossover*[G](genome_1: seq[G], genome_2: seq[G]): (seq[G], seq[G]) =
+proc crossover*[T](genome_1: seq[T], genome_2: seq[T]): (seq[T], seq[T]) =
   ## The default crossover function.
   ## Takes two parent genomes and chooses a random index at which to recombine them.
   let idx = rand(0..<genome_1.high)
