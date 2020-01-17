@@ -13,10 +13,8 @@ type Individual*[G] = object
   genome: G
   fitness: float
 
-proc `<`*(x, y: Individual): bool =
-  ## The comparison operator for individuals.
-  ## Works by compares fitnesses.
-  x.fitness < y.fitness
+proc `<`*(x, y: Individual): bool = x.fitness < y.fitness
+proc `<=`*(x, y: Individual): bool = x.fitness <= y.fitness
 
 proc createGenome*[T](data: T): seq[bool] =
   ## The default genome creation method.
@@ -39,17 +37,20 @@ proc mutate*(genome: seq[bool]): seq[bool] =
   let idx = rand(0..result.high)
   result[idx] = not result[idx]
 
-proc randomSelection*(population: seq[Individual]): Individual =
+proc randomSelection*(population: seq[Individual],
+    maximizeFitness: bool): Individual =
   return random.sample(population)
 
-proc tournamentSelection*(population: seq[Individual]): Individual =
+proc tournamentSelection*(population: seq[Individual],
+    maximizeFitness: bool): Individual =
   ## Tournament selection algorithm.
   ## Chooses two members of the population and returns the fitter of the two.
   var x = sample(population)
   var y = sample(population)
-  if x.fitness > y.fitness:
-    return x
-  return y
+  if maximizeFitness:
+    return max(x, y)
+  else:
+    return min(x, y)
 
 proc geneticAlgorithm*[D, G](data: D,
                              fitness: (G, D) -> float,
@@ -61,9 +62,10 @@ proc geneticAlgorithm*[D, G](data: D,
                              createGenome: (D) -> G = createGenome,
                              mutate: (G) -> G = mutate,
                              crossover: (G, G) -> (G, G) = crossover,
-                             selection: (seq[Individual[G]]) -> Individual[
-                                 G] = tournamentSelection,
-                             seed: int64 = 0): float =
+                             selection: (seq[Individual[G]], bool) ->
+                                 Individual[G] = tournamentSelection,
+                             seed: int64 = 0,
+                             maximizeFitness = true): Individual[G] =
   ## The main algorithm to run the genetic algorithm.
   ##
   ## By default, the type of `G` is assumed to be `seq[bool]`.
@@ -91,7 +93,7 @@ proc geneticAlgorithm*[D, G](data: D,
   for i in 0..<populationSize:
     population[i] = Individual[G](genome: createGenome(data))
 
-  for generation in 0..<generations:
+  for generation in 1..generations:
     dbg "\n############\nGeneration ", generation, "\n############"
 
     # evaluate the fitness of the population
@@ -101,8 +103,8 @@ proc geneticAlgorithm*[D, G](data: D,
 
     # create the next generation
     for i in countup(0, populationSize - 1, 2):
-      var parent_1 = selection(population)
-      var parent_2 = selection(population)
+      var parent_1 = selection(population, maximizeFitness)
+      var parent_2 = selection(population, maximizeFitness)
 
       if rand(0.0..1.0) < crossoverRate:
         let newGenes = crossover(parent_1.genome, parent_2.genome)
@@ -114,15 +116,17 @@ proc geneticAlgorithm*[D, G](data: D,
         parent_2.genome = mutate(parent_2.genome)
 
       nextPopulation[i] = parent_1
+      # prevent an out of bounds assignment
       if i+1 < populationSize:
         nextPopulation[i+1] = parent_2
 
     # preserve the fittest individual, if requested
     if elitism:
       # add it to the new population
-      nextPopulation[0] = max(population)
-      dbg "Fittest: ", max(population)
+      nextPopulation[0] = if maximizeFitness: max(population) else: min(population)
+      dbg "Fittest: ", nextPopulation[0]
 
     population = nextPopulation
-
-  return -1000.0 # TODO: placeholder
+  if maximizeFitness:
+    return max(population)
+  return min(population)
