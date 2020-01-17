@@ -10,8 +10,8 @@ template dbg(args: varargs[untyped]) =
 
 type Individual*[G] = object
   ## A type to hold a genome and its calculated fitness.
-  genome: G
-  fitness: float
+  genome*: G
+  fitness*: float
 
 proc `<`*(x, y: Individual): bool = x.fitness < y.fitness
 proc `<=`*(x, y: Individual): bool = x.fitness <= y.fitness
