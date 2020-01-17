@@ -52,7 +52,7 @@ proc tournamentSelection*(population: seq[Individual],
   else:
     return min(x, y)
 
-func defaultCallback*(fittest: Individual, generation: int): bool =
+proc defaultCallback*(fittest: Individual, generation: int): bool =
   ## The default callback function.
   ## In this case, it just returns `true`.
   return true
