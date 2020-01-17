@@ -52,6 +52,11 @@ proc tournamentSelection*(population: seq[Individual],
   else:
     return min(x, y)
 
+func defaultCallback*(fittest: Individual, generation: int): bool =
+  ## The default callback function.
+  ## In this case, it just returns `true`.
+  return true
+
 proc geneticAlgorithm*[D, G](data: D,
                              fitness: (G, D) -> float,
                              generations: Positive = 100,
@@ -65,7 +70,9 @@ proc geneticAlgorithm*[D, G](data: D,
                              selection: (seq[Individual[G]], bool) ->
                                  Individual[G] = tournamentSelection,
                              seed: int64 = 0,
-                             maximizeFitness = true): Individual[G] =
+                             maximizeFitness = true,
+                             callback: (Individual[G], int) ->
+                                 bool = defaultCallback): Individual[G] =
   ## The main algorithm to run the genetic algorithm.
   ##
   ## By default, the type of `G` is assumed to be `seq[bool]`.
@@ -79,6 +86,8 @@ proc geneticAlgorithm*[D, G](data: D,
   ## - `elitism`: Whether to conserve the fittest individual in a generation
   ## - `createGenome`: A function to generate genomes given data
   ## - `seed`: When set to 0, the default, no fixed seed is used and the program is nondeterministic. Set to a nonzero value for a fixed seed.
+  ## - `maximizeFitness`: Whether to make the fitness value as large or as small as possible.
+  ## - `callback`: A function to be called with the fittest individual and the generation number. If the return value is `false`, the optimization returns early.
 
   # either use the provided seed or randomize
   if seed == 0:
@@ -120,13 +129,18 @@ proc geneticAlgorithm*[D, G](data: D,
       if i+1 < populationSize:
         nextPopulation[i+1] = parent_2
 
+    var fittest = if maximizeFitness: max(population) else: min(population)
+    if not callback(fittest, generation):
+      break
+
     # preserve the fittest individual, if requested
     if elitism:
       # add it to the new population
-      nextPopulation[0] = if maximizeFitness: max(population) else: min(population)
-      dbg "Fittest: ", nextPopulation[0]
+      nextPopulation[0] = fittest
+      dbg "Fittest: ", fittest
 
     population = nextPopulation
+
   if maximizeFitness:
     return max(population)
   return min(population)
