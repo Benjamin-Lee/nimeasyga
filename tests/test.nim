@@ -23,7 +23,7 @@ test "Check basic knapsack optimization returns expected result":
     check(optimizationResult.fitness == 37.0)
     check(optimizationResult.genome == @[true, true, true, false, false])
 
-test "Basic maximization, minimization, and callback checks":
+test "Check maximization, minimization, and callbacks":
     let data = @[1, 2, 3, 4, 5, -125]
     func fitness(genome: seq[bool], data: seq[int]): float =
         for i, gene in genome:
