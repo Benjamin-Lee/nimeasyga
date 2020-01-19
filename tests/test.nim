@@ -1,7 +1,5 @@
 import unittest
 import nimeasyga
-import neverwinter/lru
-import options
 
 test "Check mutation function returns different bool seq":
   check(mutate(@[true, true, true]) != @[true, true, true])
