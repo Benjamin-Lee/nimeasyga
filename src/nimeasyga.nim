@@ -1,5 +1,7 @@
 import random
 import sugar
+import neverwinter/lru
+import options
 
 ## A simple, easy to use package for genetic algorithms in Nim.
 
@@ -72,7 +74,11 @@ proc geneticAlgorithm*[D, G](data: D,
                              seed: int64 = 0,
                              maximizeFitness = true,
                              callback: (Individual[G], int) ->
-                                 bool = defaultCallback): Individual[G] =
+                                 bool = defaultCallback,
+                             cache: WeightedLRU[G,
+                                 float] = newWeightedLRU[G, float](
+                                     maxWeight = 1024),
+                             useCache = false): Individual[G] =
   ## The main algorithm to run the genetic algorithm.
   ##
   ## By default, the type of `G` is assumed to be `seq[bool]`.
@@ -88,6 +94,8 @@ proc geneticAlgorithm*[D, G](data: D,
   ## - `seed`: When set to 0, the default, no fixed seed is used and the program is nondeterministic. Set to a nonzero value for a fixed seed.
   ## - `maximizeFitness`: Whether to make the fitness value as large or as small as possible.
   ## - `callback`: A function to be called with the fittest individual and the generation number. If the return value is `false`, the optimization returns early.
+  ## - `cache`: The LRU cache used to speed up the optimization by saving recently used values. Use this to configure the `maxWeight` parameter, which is useful for
+  ## - `useCache`: Whether to use the cache.
 
   # either use the provided seed or randomize
   if seed == 0:
@@ -107,7 +115,16 @@ proc geneticAlgorithm*[D, G](data: D,
 
     # evaluate the fitness of the population
     for individual in population.mitems:
-      individual.fitness = fitness(individual.genome, data)
+      if useCache:
+        if cache[individual.genome].isSome: # if we have a cache hit
+          individual.fitness = cache[individual.genome].get
+        else: # a cache miss
+          var computedFitness = fitness(individual.genome, data)
+          when defined(cacheHit): echo "Hit! ", computedFitness
+          cache[individual.genome, 1] = computedFitness
+          individual.fitness = fitness(individual.genome, data)
+      else:
+        individual.fitness = fitness(individual.genome, data)
     dbg "\nPopulation: ", population
 
     # create the next generation

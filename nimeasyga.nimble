@@ -11,3 +11,4 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.0.0"
+requires "neverwinter >= 1.2.0"

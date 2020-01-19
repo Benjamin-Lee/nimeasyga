@@ -74,3 +74,7 @@ suite "Check geneticAlgorithm proc":
     check(gensNoImprovement == 11)
     check(totalGenerations < 100)
 
+  test "Caching has no effect on final result":
+    check(geneticAlgorithm(data, fitness, cache = some(newWeightedLRU[seq[bool],
+        float](maxWeight = 1024))) == geneticAlgorithm(data, fitness))
+
